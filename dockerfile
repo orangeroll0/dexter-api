@@ -1,7 +1,14 @@
 FROM oven/bun:1.0
+
 WORKDIR /app
-COPY . .
+
+COPY package.json bun.lockb* ./
 RUN bun install
-RUN cd dexter-jp && bun install
+
+COPY . .
+
+RUN cd dexter-jp && bun install || true
+
 EXPOSE 3000
-CMD ["bun", "server/index.ts"]
+
+CMD ["bun", "run", "start"]
