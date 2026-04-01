@@ -6,7 +6,7 @@ export function runDexterCLI(
   onOutput: (o: string) => void,
   onClose: (ok: boolean) => void
 ) {
-  const scriptPath = path.resolve("src/gateway/index.ts");
+  const scriptPath = path.resolve("dexter-jp/src/index.ts");
 
   const p = spawn("./node_modules/.bin/tsx", [scriptPath, "run"], {
     env: { ...process.env, QUERY: query }
