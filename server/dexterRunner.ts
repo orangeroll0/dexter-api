@@ -1,53 +1,46 @@
-import { spawn } from "child_process";
+// dexter-api/server/dexterRunner.ts
+import fetch from "node-fetch";
 
-function normalizeOutput(text: string): string[] {
-  return text
-    .replace(/\x1b\[[0-9;]*[A-Za-z]/g, "") // ANSIカラー除去
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
-
-export function runDexterCLI(
+export async function runDexterCLI(
   query: string,
   onOutput: (o: string) => void,
   onDone: (ok: boolean) => void
 ) {
   try {
-    const proc = spawn("bun", ["run", "gateway"], {
-      cwd: "./dexter-jp",
-      env: process.env
+    onOutput(`[INFO] Sending request to dexter-jp /api/analyze...`);
+    
+    const resp = await fetch("http://localhost:3000/api/analyze", { // dexter-jp サーバーURL
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
     });
 
-    // 入力（改行を付与）
-    proc.stdin.write(query + "\n");
-    proc.stdin.end();
+    onOutput(`[INFO] Received HTTP status: ${resp.status}`);
 
-    // 標準出力
-    proc.stdout.on("data", (d) => {
-      normalizeOutput(d.toString()).forEach(onOutput);
-    });
-
-    // エラー出力
-    proc.stderr.on("data", (d) => {
-      normalizeOutput(d.toString()).forEach((l) =>
-        onOutput("[ERR] " + l)
-      );
-    });
-
-    // 終了
-    proc.on("close", (code) => {
-      onDone(code === 0);
-    });
-
-    // 起動エラー
-    proc.on("error", (err) => {
-      onOutput("[ERR] process error: " + err.message);
+    if (!resp.ok) {
+      const text = await resp.text();
+      onOutput(`[ERR] dexter-jp returned error: ${text}`);
       onDone(false);
-    });
+      return;
+    }
+
+    const data = await resp.json();
+    onOutput(`[INFO] Response JSON: ${JSON.stringify(data)}`);
+
+    // 結果を逐次出力に分解（任意）
+    if (data.result) {
+      if (typeof data.result === "string") {
+        onOutput(data.result);
+      } else if (Array.isArray(data.result)) {
+        data.result.forEach((line: string) => onOutput(line));
+      } else {
+        onOutput(JSON.stringify(data.result));
+      }
+    }
+
+    onDone(true);
   } catch (e: any) {
-    onOutput("[ERR] spawn failed: " + e.message);
+    onOutput(`[ERR] fetch failed: ${e.message}`);
     onDone(false);
   }
 }
