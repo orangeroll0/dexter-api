@@ -1,31 +1,53 @@
 import { spawn } from "child_process";
-import path from "path";
+
+function normalizeOutput(text: string): string[] {
+  return text
+    .replace(/\x1b\[[0-9;]*[A-Za-z]/g, "") // ANSIカラー除去
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
 
 export function runDexterCLI(
   query: string,
   onOutput: (o: string) => void,
-  onClose: (ok: boolean) => void
+  onDone: (ok: boolean) => void
 ) {
-  const scriptPath = path.resolve("dexter-jp/src/cli.ts");
+  try {
+    const proc = spawn("bun", ["run", "gateway"], {
+      cwd: "./dexter-jp",
+      env: process.env
+    });
 
-  const p = spawn("./node_modules/.bin/tsx", [scriptPath], {
-    env: { ...process.env, QUERY: query }
-  });
+    // 入力（改行を付与）
+    proc.stdin.write(query + "\n");
+    proc.stdin.end();
 
-  p.stdout.on("data", (d) => {
-    onOutput(d.toString());
-  });
+    // 標準出力
+    proc.stdout.on("data", (d) => {
+      normalizeOutput(d.toString()).forEach(onOutput);
+    });
 
-  p.stderr.on("data", (d) => {
-    onOutput("[ERR] " + d.toString());
-  });
+    // エラー出力
+    proc.stderr.on("data", (d) => {
+      normalizeOutput(d.toString()).forEach((l) =>
+        onOutput("[ERR] " + l)
+      );
+    });
 
-  p.on("close", (code) => {
-    onClose(code === 0);
-  });
+    // 終了
+    proc.on("close", (code) => {
+      onDone(code === 0);
+    });
 
-  p.on("error", (err) => {
-    onOutput("[ERR] process error: " + err.message);
-    onClose(false);
-  });
+    // 起動エラー
+    proc.on("error", (err) => {
+      onOutput("[ERR] process error: " + err.message);
+      onDone(false);
+    });
+  } catch (e: any) {
+    onOutput("[ERR] spawn failed: " + e.message);
+    onDone(false);
+  }
 }
