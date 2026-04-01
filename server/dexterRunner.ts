@@ -8,7 +8,7 @@ export function runDexterCLI(
 ) {
   const scriptPath = path.resolve("src/gateway/index.ts");
 
-  const p = spawn("npx", ["tsx", scriptPath, "run"], {
+  const p = spawn("./node_modules/.bin/tsx", [scriptPath, "run"], {
     env: { ...process.env, QUERY: query }
   });
 
