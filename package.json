@@ -6,6 +6,7 @@
     "start": "bun run server/index.ts"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "tsx": "^4.7.0"
   }
 }
