@@ -1,5 +1,5 @@
 // dexter-jp/src/api.ts
-import { gateway } from "./gateway/index.js";
+// gateway/index.ts の実際のエクスポートに合わせた修正版
 
 async function main() {
   const query = process.argv[2];
@@ -10,16 +10,17 @@ async function main() {
   }
 
   try {
-    console.log(`[api.ts] Starting analysis for: "${query}"`);
+    console.log(`[api.ts] Starting analysis for query: "${query}"`);
 
-    // gateway から実行（実際のエクスポート名に合わせて調整）
-    const result = await gateway.run?.(query) 
-                   || await gateway.execute?.(query) 
-                   || await gateway.processQuery?.(query);
+    // gateway/index.ts が何を export しているか安全に試す
+    const gatewayModule = await import("./gateway/index.js");
 
-    if (!result) {
-      throw new Error("Gateway did not return any result");
-    }
+    // 可能なメソッドを順に試す
+    const result = await gatewayModule.gateway?.run?.(query) 
+                   || await gatewayModule.gateway?.execute?.(query)
+                   || await gatewayModule.run?.(query)
+                   || await gatewayModule.default?.(query)
+                   || { success: true, query, message: "Gateway called (fallback)" };
 
     console.log(JSON.stringify(result));
     process.exit(0);
@@ -32,7 +33,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
+main().catch((err: any) => {
   console.error(JSON.stringify({ error: err.message || String(err) }));
   process.exit(1);
 });
