@@ -1,53 +1,66 @@
-// dexter-api/server/dexterRunner.ts
-import { spawn } from "child_process";
-import path from "path";
+import { spawn } from "bun";
 
 export function runDexterCLI(
   query: string,
-  onOutput: (o: string) => void,
-  onDone: (ok: boolean) => void
+  onOutput: (line: string) => void,
+  onFinish: (success: boolean) => void
 ) {
-  try {
-    onOutput("[INFO] Starting Dexter CLI...");
+  const proc = spawn({
+    cmd: ["bun", "run", "dexter-jp/src/index.ts", query],
+    stdout: "pipe",
+    stderr: "pipe"
+  });
 
-    const dexterPath = path.resolve("./dexter-jp");
+  let stdoutBuffer = "";
+  let stderrBuffer = "";
 
-    const proc = spawn("bun", ["run", "start"], {
-      cwd: dexterPath,
-      env: { ...process.env },
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+  // ---- STDOUT ----
+  (async () => {
+    for await (const chunk of proc.stdout) {
+      const text = chunk.toString();
+      stdoutBuffer += text;
 
-    // 起動待機を少し長めに（インタラクティブプロンプトが出るまで待つ）
-    setTimeout(() => {
-      if (proc.killed) return;
-      const cleanQuery = query.trim();
-      proc.stdin.write(cleanQuery + "\n\n");   // 改行を2回入れてプロンプトを抜ける対策
-      proc.stdin.end();
-      onOutput(`[INFO] Query sent: ${cleanQuery.substring(0, 100)}${cleanQuery.length > 100 ? '...' : ''}`);
-    }, 3000);  // 3秒待機（調整可能）
+      let lines = stdoutBuffer.split("\n");
+      stdoutBuffer = lines.pop() || "";
 
-    proc.stdout.on("data", (data: Buffer) => {
-      const lines = data.toString().split("\n").map(l => l.trim()).filter(Boolean);
-      lines.forEach(l => onOutput(`[OUT] ${l}`));
-    });
+      for (const line of lines) {
+        onOutput(line);
+      }
+    }
+  })();
 
-    proc.stderr.on("data", (data: Buffer) => {
-      const lines = data.toString().split("\n").map(l => l.trim()).filter(Boolean);
-      lines.forEach(l => onOutput(`[ERR] ${l}`));
-    });
+  // ---- STDERR ----
+  (async () => {
+    for await (const chunk of proc.stderr) {
+      const text = chunk.toString();
+      stderrBuffer += text;
 
-    proc.on("close", (code: number | null) => {
-      onOutput(`[INFO] Dexter CLI exited with code ${code}`);
-      onDone(code === 0);
-    });
+      let lines = stderrBuffer.split("\n");
+      stderrBuffer = lines.pop() || "";
 
-    proc.on("error", (err: Error) => {
-      onOutput(`[ERR] Process error: ${err.message}`);
-      onDone(false);
-    });
-  } catch (e: any) {
-    onOutput(`[ERR] spawn failed: ${e.message}`);
-    onDone(false);
-  }
+      for (const line of lines) {
+        onOutput("[stderr] " + line);
+      }
+    }
+  })();
+
+  // ---- TIMEOUT ----
+  const timeout = setTimeout(() => {
+    try {
+      proc.kill();
+    } catch {}
+    onFinish(false);
+  }, 60000); // 60秒
+
+  // ---- EXIT ----
+  (async () => {
+    const exitCode = await proc.exited;
+    clearTimeout(timeout);
+
+    // 残りのバッファを吐き出す
+    if (stdoutBuffer.length > 0) onOutput(stdoutBuffer);
+    if (stderrBuffer.length > 0) onOutput("[stderr] " + stderrBuffer);
+
+    onFinish(exitCode === 0);
+  })();
 }
