@@ -2,19 +2,13 @@ export const runDexterCLI = async (query: string) => {
   console.log(`[dexterRunner] Starting with query: "${query}"`);
 
   try {
-    const proc = Bun.spawn(["bun", "tsx", "src/cli.ts", query], {
+    const proc = Bun.spawn(["bunx", "tsx", "src/api.ts", query], {
       cwd: "/app/dexter-jp",
-      env: {
-        ...process.env,
-        TERM: "dumb",        // Ink TUI対策（重要）
-        FORCE_COLOR: "0",    // 色出力を無効化
-        CI: "true",          // CI/非対話環境であることを伝える
-        NODE_ENV: "production",
-      },
+      env: process.env,
       stdout: "pipe",
       stderr: "pipe",
     });
-
+    
     console.log(`[dexterRunner] Process started (PID: ${proc.pid})`);
 
     let output = "";
