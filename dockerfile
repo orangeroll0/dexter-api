@@ -3,8 +3,11 @@ FROM oven/bun:latest
 WORKDIR /app
 
 # 最小システム依存（build-essentialは一旦外してテスト）
-RUN apt-get update && apt-get install -y python3 && \
-    rm -rf /var/lib/apt/lists/* && apt-get clean
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Playwright ブラウザダウンロード防止
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
