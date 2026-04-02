@@ -2,7 +2,8 @@ export const runDexterCLI = async (query: string) => {
   console.log(`[dexterRunner] Starting with query: "${query}"`);
 
   try {
-    const proc = Bun.spawn(["bunx", "tsx", "src/api.ts", query], {
+    // const proc = Bun.spawn(["bunx", "tsx", "src/api.ts", query], {
+    const proc = Bun.spawn(["bun", "run", "src/api.ts", query], {
       cwd: "/app/dexter-jp",
       env: process.env,
       stdout: "pipe",
