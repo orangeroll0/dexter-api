@@ -4,12 +4,14 @@ import { runDexterCLI } from "./dexterRunner";
 import { createJob, appendOutput, finishJob, getJob } from "./jobs";
 
 const app = express();
+
 app.use(express.json());
+
+// ---- Routes ----
 
 app.post("/api/dexter/run", (req: Request, res: Response) => {
   const query = req.body?.query;
 
-  // 入力検証
   if (typeof query !== "string" || query.trim().length === 0) {
     return res.status(400).json({ error: "invalid query" });
   }
@@ -61,16 +63,18 @@ app.get("/api/dexter/result", (req: Request, res: Response) => {
   return res.json(job);
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`server started`);
-});
-
+// ---- JSON Parse Error Handler (correct position) ----
 app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && 'body' in err) {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       error: "Invalid JSON",
-      message: err.message
+      message: err.message,
     });
   }
   next();
+});
+
+// ---- Start Server ----
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`server started`);
 });
