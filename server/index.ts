@@ -64,3 +64,13 @@ app.get("/api/dexter/result", (req: Request, res: Response) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log(`server started`);
 });
+
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({
+      error: "Invalid JSON",
+      message: err.message
+    });
+  }
+  next();
+});
