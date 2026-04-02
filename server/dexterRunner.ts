@@ -1,61 +1,39 @@
-export function runDexterCLI(query, onOutput, onFinish) {
-  console.log("RUN:", ["bun", "run", "/app/dexter-jp/src/cli.ts", query]);
+export const runDexter = async (query: string) => {
+  console.log(`[dexterRunner] Starting CLI with query: "${query}"`);
 
-const proc = Bun.spawn(["bunx", "tsx", "src/cli.ts", query], {
-  cwd: "/app/dexter-jp",
-  env: process.env,
-  stdout: "pipe",
-  stderr: "pipe",
-});
+  try {
+    const proc = Bun.spawn(["bun", "tsx", "src/cli.ts", query], {
+      cwd: "/app/dexter-jp",
+      env: { ...process.env },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
 
+    let output = "";
+    let stderrOutput = "";
 
-  console.log("PROCESS STARTED");
-
-  let stdoutBuffer = "";
-  let stderrBuffer = "";
-
-  (async () => {
     for await (const chunk of proc.stdout) {
-      const text = chunk.toString();
-      stdoutBuffer += text;
-
-      let lines = stdoutBuffer.split("\n");
-      stdoutBuffer = lines.pop() || "";
-
-      for (const line of lines) {
-        onOutput(line);
-      }
+      const text = new TextDecoder().decode(chunk);
+      output += text;
+      console.log("[dexter stdout]", text.trim());
     }
-  })();
 
-  (async () => {
     for await (const chunk of proc.stderr) {
-      const text = chunk.toString();
-      stderrBuffer += text;
-
-      let lines = stderrBuffer.split("\n");
-      stderrBuffer = lines.pop() || "";
-
-      for (const line of lines) {
-        onOutput("[stderr] " + line);
-      }
+      const text = new TextDecoder().decode(chunk);
+      stderrOutput += text;
+      console.error("[dexter stderr]", text.trim());
     }
-  })();
 
-  const timeout = setTimeout(() => {
-    try { proc.kill(); } catch {}
-    onFinish(false);
-  }, 60000);
-
-  (async () => {
     const exitCode = await proc.exited;
-    clearTimeout(timeout);
+    console.log(`[dexterRunner] Process exited with code: ${exitCode}`);
 
-    console.log("PROCESS EXIT:", exitCode);
+    return {
+      output: output.trim(),
+      error: exitCode !== 0 ? stderrOutput.trim() : undefined
+    };
 
-    if (stdoutBuffer.length > 0) onOutput(stdoutBuffer);
-    if (stderrBuffer.length > 0) onOutput("[stderr] " + stderrBuffer);
-
-    onFinish(exitCode === 0);
-  })();
-}
+  } catch (err: any) {
+    console.error("[dexterRunner] Spawn error:", err.message);
+    return { output: "", error: err.message };
+  }
+};
