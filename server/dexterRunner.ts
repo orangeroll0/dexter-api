@@ -1,20 +1,17 @@
-import { spawn } from "bun";
+export function runDexterCLI(query, onOutput, onFinish) {
+  console.log("RUN:", ["bun", "run", "/app/dexter-jp/src/cli.ts", query]);
 
-export function runDexterCLI(
-  query: string,
-  onOutput: (line: string) => void,
-  onFinish: (success: boolean) => void
-) {
   const proc = spawn({
     cmd: ["bun", "run", "/app/dexter-jp/src/cli.ts", query],
     stdout: "pipe",
-    stderr: "pipe"
+    stderr: "pipe",
   });
+
+  console.log("PROCESS STARTED");
 
   let stdoutBuffer = "";
   let stderrBuffer = "";
 
-  // ---- STDOUT ----
   (async () => {
     for await (const chunk of proc.stdout) {
       const text = chunk.toString();
@@ -29,7 +26,6 @@ export function runDexterCLI(
     }
   })();
 
-  // ---- STDERR ----
   (async () => {
     for await (const chunk of proc.stderr) {
       const text = chunk.toString();
@@ -44,18 +40,16 @@ export function runDexterCLI(
     }
   })();
 
-  // ---- TIMEOUT ----
   const timeout = setTimeout(() => {
-    try {
-      proc.kill();
-    } catch {}
+    try { proc.kill(); } catch {}
     onFinish(false);
   }, 60000);
 
-  // ---- EXIT ----
   (async () => {
     const exitCode = await proc.exited;
     clearTimeout(timeout);
+
+    console.log("PROCESS EXIT:", exitCode);
 
     if (stdoutBuffer.length > 0) onOutput(stdoutBuffer);
     if (stderrBuffer.length > 0) onOutput("[stderr] " + stderrBuffer);
