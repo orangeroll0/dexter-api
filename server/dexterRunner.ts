@@ -6,7 +6,7 @@ export function runDexterCLI(
   onFinish: (success: boolean) => void
 ) {
   const proc = spawn({
-    cmd: ["bun", "run", "/app/dexter-jp/src/index.ts", query],
+    cmd: ["bun", "run", "/app/dexter-jp/src/index.tsx", query],
     stdout: "pipe",
     stderr: "pipe"
   });
