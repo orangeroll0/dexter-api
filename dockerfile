@@ -1,5 +1,7 @@
 FROM oven/bun:latest
 
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
 WORKDIR /app
 
 # 1. 最小限のシステム依存（better-sqlite3対応のため build-essential は残す）
