@@ -1,18 +1,37 @@
-# 不要なものを除外（これが一番効く）
-node_modules
-.git
+# === Docker build context を大幅削減 ===
+
+# 最も重要な除外（これだけで効果大）
+node_modules/
+.git/
 .gitignore
 .gitmodules
-README*.md
-docs
+.github/
+
+# 開発・テスト関連
+dist/
+build/
+coverage/
+.cache/
+tmp/
+*.test.ts
+*.spec.ts
+jest.config.js
+
+# データ・ログファイル
 *.log
 *.csv
 *.jsonl
-data
-.cache
-tmp
-dist
-build
-coverage
-*.test.ts
-*.spec.ts
+*.sqlite
+*.db
+data/
+vendor/
+
+# ドキュメント類
+README*.md
+LICENSE
+docs/
+
+# その他不要
+.env
+.env.example
+*.DS_Store
