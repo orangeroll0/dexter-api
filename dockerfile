@@ -1,13 +1,12 @@
-FROM oven/bun:1.0
+FROM oven/bun:latest
 
 WORKDIR /app
 
-COPY package.json bun.lockb* ./
-RUN bun install
-
 COPY . .
 
-RUN cd dexter-jp && bun install || true
+RUN git submodule update --init --recursive
+
+RUN bun install
 
 EXPOSE 3000
 
