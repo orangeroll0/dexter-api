@@ -2,7 +2,7 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-# 1. システム依存（better-sqlite3などのネイティブモジュール用）
+# 1. 最小限のシステム依存（better-sqlite3対応のため build-essential は残す）
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -11,24 +11,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# 2. ルート依存を先にコピー（キャッシュを効かせる）
+# 2. 依存インストール（キャッシュを強く効かせる）
 COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile
 
-# 3. dexter-jp の依存を先にコピー（キャッシュを効かせる）
-COPY dexter-jp/package.json dexter-jp/bun.lock* ./dexter-jp/
+COPY dexter-jp/package.json dexter-jp/bun.lockb* ./dexter-jp/
 RUN cd dexter-jp && bun install --frozen-lockfile
 
-# 4. 残りの全ソースコードをコピー
+# 3. ソースコード（最後にコピー）
 COPY . .
 
-# 5. デバッグ出力（Build Logs で確認したいときに便利）
+# 4. 軽いデバッグ出力
 RUN echo "=== Build completed ===" && \
-    ls -la dexter-jp/src/api.ts && \
-    echo "=== api.ts exists ===" || echo "api.ts NOT FOUND!"
+    ls -la dexter-jp/src/api.ts || echo "api.ts NOT FOUND"
 
 EXPOSE 3000
-
-# サーバー起動（明示的に server/index.ts を指定）
-# CMD ["bun", "run", "server/index.ts"]
 CMD ["bun", "run", "start"]
