@@ -1,0 +1,18 @@
+# 不要なものを除外（これが一番効く）
+node_modules
+.git
+.gitignore
+.gitmodules
+README*.md
+docs
+*.log
+*.csv
+*.jsonl
+data
+.cache
+tmp
+dist
+build
+coverage
+*.test.ts
+*.spec.ts
