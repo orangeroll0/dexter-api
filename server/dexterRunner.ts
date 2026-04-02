@@ -1,11 +1,13 @@
 export function runDexterCLI(query, onOutput, onFinish) {
   console.log("RUN:", ["bun", "run", "/app/dexter-jp/src/cli.ts", query]);
 
-  const proc = spawn({
-    cmd: ["bun", "run", "/app/dexter-jp/src/cli.ts", query],
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+const proc = Bun.spawn(["bunx", "tsx", "src/cli.ts", query], {
+  cwd: "/app/dexter-jp",
+  env: process.env,
+  stdout: "pipe",
+  stderr: "pipe",
+});
+
 
   console.log("PROCESS STARTED");
 
