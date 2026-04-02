@@ -6,7 +6,7 @@ export function runDexterCLI(
   onFinish: (success: boolean) => void
 ) {
   const proc = spawn({
-    cmd: ["bun", "run", "dexter-jp/src/index.ts", query],
+    cmd: ["bun", "run", "/app/dexter-jp/src/index.ts", query],
     stdout: "pipe",
     stderr: "pipe"
   });
@@ -50,14 +50,13 @@ export function runDexterCLI(
       proc.kill();
     } catch {}
     onFinish(false);
-  }, 60000); // 60秒
+  }, 60000);
 
   // ---- EXIT ----
   (async () => {
     const exitCode = await proc.exited;
     clearTimeout(timeout);
 
-    // 残りのバッファを吐き出す
     if (stdoutBuffer.length > 0) onOutput(stdoutBuffer);
     if (stderrBuffer.length > 0) onOutput("[stderr] " + stderrBuffer);
 
