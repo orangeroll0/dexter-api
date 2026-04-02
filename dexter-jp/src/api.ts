@@ -1,4 +1,5 @@
-import { run } from "./gateway/run.js";   // .js 拡張子を付けておく
+// dexter-jp/src/api.ts
+import { gateway } from "./gateway/index.js";
 
 async function main() {
   const query = process.argv[2];
@@ -9,28 +10,29 @@ async function main() {
   }
 
   try {
-    console.log(`[api.ts] Starting analysis for query: "${query}"`);
+    console.log(`[api.ts] Starting analysis for: "${query}"`);
 
-    const result = await run(query);
+    // gateway から実行（実際のエクスポート名に合わせて調整）
+    const result = await gateway.run?.(query) 
+                   || await gateway.execute?.(query) 
+                   || await gateway.processQuery?.(query);
 
-    // 必ず JSON で出力（これが一番重要）
+    if (!result) {
+      throw new Error("Gateway did not return any result");
+    }
+
     console.log(JSON.stringify(result));
-
     process.exit(0);
   } catch (err: any) {
-    const errorResponse = {
-      error: err.message || "Unknown error in dexter-jp",
-      details: String(err),
-    };
-    console.error(JSON.stringify(errorResponse));
+    console.error(JSON.stringify({
+      error: err.message || "Unknown error",
+      details: String(err)
+    }));
     process.exit(1);
   }
 }
 
-main().catch((err: any) => {
-  console.error(JSON.stringify({
-    error: "Fatal error in api.ts",
-    details: err.message || String(err)
-  }));
+main().catch(err => {
+  console.error(JSON.stringify({ error: err.message || String(err) }));
   process.exit(1);
 });
