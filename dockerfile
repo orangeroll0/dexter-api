@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY . .
 
+RUN echo "=== LISTING /app ===" && ls -R /app
+
 RUN bun install
 
 EXPOSE 3000
