@@ -3,6 +3,17 @@ import crypto from "crypto";
 import { runDexterCLI } from "./dexterRunner";
 import { createJob, appendOutput, finishJob, getJob } from "./jobs";
 
+
+import { readdirSync } from "fs";
+
+console.log("=== dexter-jp exists? ===");
+try {
+  console.log(readdirSync("/app/dexter-jp"));
+  console.log(readdirSync("/app/dexter-jp/src"));
+} catch (e) {
+  console.error("dexter-jp not found:", e);
+}
+
 const app = express();
 
 app.use(express.json());
